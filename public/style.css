@@ -1,0 +1,82 @@
+::-webkit-scrollbar {
+    display: none;
+    /* Chrome, Safari, Edge */
+}
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f9fafb;
+    margin: 0;
+    background-color: rgb(217, 255, 255);
+    padding: 0;
+}
+.loading {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.dots::after {
+    content: '...';
+    /* start with 3 dots */
+    animation: dots 3s steps(1, end) infinite;
+}
+
+@keyframes dots {
+    0% {
+        content: '...';
+    }
+
+    7% {
+        content: '....';
+    }
+
+    14% {
+        content: '.....';
+    }
+
+    21% {
+        content: '......';
+    }
+
+    28% {
+        content: '.......';
+    }
+
+    35% {
+        content: '........';
+    }
+
+    42% {
+        content: '.........';
+    }
+
+    49% {
+        content: '..........';
+    }
+
+    56% {
+        content: '...........';
+    }
+
+    63% {
+        content: '............';
+    }
+
+    70% {
+        content: '.............';
+    }
+
+    77% {
+        content: '..............';
+    }
+
+    84% {
+        content: '...............';
+    }
+
+    /* 15 dots */
+    100% {
+        content: '...';
+    }
+
+    /* reset back to 3 dots */
+}
