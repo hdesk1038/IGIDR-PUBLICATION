@@ -51,10 +51,11 @@ const PublicationForm = () => {
         const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
         const fontItalic = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
 
-        // ===== COVER PAGE =====
-        // ===== COVER PAGE =====
+        // ====== COVER PAGE CREATION ======
         const cover = pdfDoc.addPage([595, 842]);
         const { width, height } = cover.getSize();
+
+        // Background
         cover.drawRectangle({
             x: 0,
             y: 0,
@@ -63,51 +64,80 @@ const PublicationForm = () => {
             color: rgb(0.851, 1, 1),
         });
 
-        // Draw publication number at top-right
+        // Draw publication number (top-right)
         const pubFontSize = 14;
         const pubNumber = publicationNo;
         const pubWidth = fontBold.widthOfTextAtSize(pubNumber, pubFontSize);
 
         cover.drawText(pubNumber, {
-            x: width - pubWidth - 50, // 50 px padding from right edge
-            y: height - 50, // 50 px from top
+            x: width - pubWidth - 50, // 50 px padding from right
+            y: height - 50,           // 50 px from top
             size: pubFontSize,
             font: fontBold,
             color: rgb(0, 0, 0),
         });
 
-        // Title (big, top center)
-        const titleSize = 19;
-        const titleLines = wrapText(meta.title || "", 60);
+        // ====== HELPER FUNCTION ======
+        function wrapTextByWidth(text, font, fontSize, maxWidth) {
+            if (!text) return [];
+            const words = text.split(/\s+/);
+            let lines = [];
+            let currentLine = "";
+
+            for (let word of words) {
+                const testLine = currentLine ? currentLine + " " + word : word;
+                const testWidth = font.widthOfTextAtSize(testLine, fontSize);
+
+                if (testWidth <= maxWidth) {
+                    currentLine = testLine;
+                } else {
+                    if (currentLine) lines.push(currentLine);
+                    currentLine = word;
+                }
+            }
+            if (currentLine) lines.push(currentLine);
+
+            return lines;
+        }
+
+        // ====== TITLE ======
+        const titleSizeCover = 19;
+        const titleLinesCover = wrapTextByWidth(meta.title || "", fontBold, titleSizeCover, width - 100);
         let y = height - 100;
 
-        for (const line of titleLines) {
-            const textWidth = fontBold.widthOfTextAtSize(line, titleSize);
+        for (const line of titleLinesCover) {
+            const textWidth = fontBold.widthOfTextAtSize(line, titleSizeCover);
 
-            // Draw maroon text on top
             cover.drawText(line, {
-                x: (width - textWidth) / 2,
+                x: (width - textWidth) / 2, // center align
                 y,
-                size: titleSize,
+                size: titleSizeCover,
                 font: fontBold,
-                color: rgb(0.5, 0, 0),            // maroon text
+                color: rgb(0.5, 0, 0), // maroon
             });
 
             y -= 25; // spacing between lines
         }
 
-        y -= 80;
+        y -= 80; // gap before authors
 
-        // Author(s)
-        const authorSize = 13;
-        const authorText = meta.author || "";
-        const authorWidth = font.widthOfTextAtSize(authorText, authorSize);
-        cover.drawText(authorText, {
-            x: (width - authorWidth) / 2,
-            y,
-            size: authorSize,
-            font,
-        });
+        // ====== AUTHORS ======
+        const authorSizeCover = 13;
+        const authorLinesCover = wrapTextByWidth(meta.author || "", font, authorSizeCover, width - 100);
+
+        for (const line of authorLinesCover) {
+            const lineWidth = font.widthOfTextAtSize(line, authorSizeCover);
+
+            cover.drawText(line, {
+                x: (width - lineWidth) / 2, // center align
+                y,
+                size: authorSizeCover,
+                font,
+                color: rgb(0, 0, 0),
+            });
+
+            y -= 18; // spacing between lines
+        }
 
         // --- Insert IGIDR LOGO ---
         const path1 = `M629 4183 l-586 -3 -6 -83 c-9 -106 -9 -3955 -1 -4024 l7 -53 1613 0 1614 0 -2 2074 c-2 1141 -6 2078 -10 2082 -8 8 -1697 13 -2629 7z m2570 -77 c9 -10 11 -524 9 -2014 -2 -1100 -5 -2003 -8 -2005 -11 -11 -1679 -19 -2372 -12 l-738 7 0 1997 c0 1098 3 2006 6 2019 l6 22 1543 0 c1298 0 1544 -2 1554 -14z`;   // Outer frame
@@ -186,45 +216,86 @@ const PublicationForm = () => {
             size: 12,
             font: fontItalic,
         });
-
         // ===== ABSTRACT PAGE =====
         const absPage = pdfDoc.addPage([595, 842]);
         let ay = 780;
 
-        // Title
+        const marginLeft = 50;
+        const marginRight = 590;
+        const lineWidthMax = marginRight - marginLeft;
+
+        // ===== TITLE =====
+        const titleSize = 18;
+        const titleLines = wrapTextByWidth(meta.title || "", fontBold, titleSize, lineWidthMax);
+
         for (const line of titleLines) {
-            const textWidth = fontBold.widthOfTextAtSize(line, 18);
+            const textWidth = fontBold.widthOfTextAtSize(line, titleSize);
             absPage.drawText(line, {
                 x: (595 - textWidth) / 2,
                 y: ay,
-                size: 18,
+                size: titleSize,
                 font: fontBold,
             });
             ay -= 26;
         }
         ay -= 20;
 
-        // Author
-        absPage.drawText(authorText, {
-            x: (595 - font.widthOfTextAtSize(authorText, 12)) / 2,
-            y: ay,
-            size: 12,
-            font,
-        });
-        ay -= 24;
+        // ===== AUTHOR =====
+        const authorSize = 12;
+        const authorLines = wrapTextByWidth(meta.author || "", font, authorSize, lineWidthMax);
 
-        // Email
-        if (meta.email) {
-            const emailLine = `Email (corresponding author): ${meta.email}`;
-            const emailWidth = font.widthOfTextAtSize(emailLine, 11);
-            absPage.drawText(emailLine, {
-                x: (595 - emailWidth) / 2,
+        for (const line of authorLines) {
+            const lineWidth = font.widthOfTextAtSize(line, authorSize);
+            absPage.drawText(line, {
+                x: (595 - lineWidth) / 2,
                 y: ay,
-                size: 11,
+                size: authorSize,
                 font,
-                color: rgb(0, 0, 1),
             });
-            ay -= 60;
+            ay -= 20;
+        }
+        ay -= 10;
+
+        // ===== EMAIL =====
+        if (meta.email) {
+            const emailText = `Email (corresponding author): ${meta.email}`;
+            const emailSize = 11;
+            const emailLines = wrapTextByWidth(emailText, font, emailSize, lineWidthMax);
+
+            for (const line of emailLines) {
+                const lineWidth = font.widthOfTextAtSize(line, emailSize);
+                absPage.drawText(line, {
+                    x: (595 - lineWidth) / 2,
+                    y: ay,
+                    size: emailSize,
+                    font,
+                    color: rgb(0, 0, 1),
+                });
+                ay -= 16;
+            }
+            ay -= 40;
+        }
+
+        // ===== Helper: wrap text within width =====
+        function wrapTextByWidth(text, font, fontSize, maxWidth) {
+            if (!text) return [];
+            const words = text.split(/\s+/);
+            let lines = [];
+            let currentLine = "";
+
+            for (let word of words) {
+                const testLine = currentLine ? currentLine + " " + word : word;
+                const testWidth = font.widthOfTextAtSize(testLine, fontSize);
+
+                if (testWidth <= maxWidth) {
+                    currentLine = testLine;
+                } else {
+                    if (currentLine) lines.push(currentLine);
+                    currentLine = word;
+                }
+            }
+            if (currentLine) lines.push(currentLine);
+            return lines;
         }
 
         // Abstract heading
@@ -241,9 +312,6 @@ const PublicationForm = () => {
         // Abstract body (already justified in your version, keep same)
         const absLines = wrapText(meta.abstract || "", 95);
         const bodySize = 11;
-        const marginLeft = 50;
-        const marginRight = 545;
-        const lineWidthMax = marginRight - marginLeft;
 
         for (let i = 0; i < absLines.length; i++) {
             let line = absLines[i];
@@ -269,22 +337,35 @@ const PublicationForm = () => {
         }
         ay -= 45;
 
-        // Keywords
+        // ===== KEYWORDS =====
         if (meta.keywords) {
-            absPage.drawText("Keywords: ", {
-                x: 50,
+            const kwLabel = "Keywords:";
+            const kwLabelSize = 11;
+            absPage.drawText(kwLabel, {
+                x: marginLeft,
                 y: ay,
-                size: 11,
+                size: kwLabelSize,
                 font: fontBold,
             });
-            absPage.drawText(meta.keywords, {
-                x: 120,
-                y: ay,
-                size: 11,
-                font,
-            });
-            ay -= 65;
+
+            const kwText = meta.keywords;
+            const kwSize = 11;
+            const kwLines = wrapTextByWidth(kwText, font, kwSize, lineWidthMax - 70);
+
+            let kwY = ay;
+            for (const line of kwLines) {
+                absPage.drawText(line, {
+                    x: marginLeft + 70,
+                    y: kwY,
+                    size: kwSize,
+                    font,
+                });
+                kwY -= 14;
+            }
+
+            ay = kwY - 30;
         }
+
 
         // JEL Code
         if (meta.jelcode) {
@@ -454,7 +535,7 @@ const PublicationForm = () => {
                     </div>,
                     {
                         autoClose: 8000,
-                        onClose: () => window.location.reload() 
+                        onClose: () => window.location.reload()
                     }
                 );
 
