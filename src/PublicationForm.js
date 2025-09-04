@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { PDFDocument, StandardFonts, degrees, rgb, rotateDegrees, scale } from "pdf-lib";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -216,9 +215,20 @@ const PublicationForm = () => {
             size: 12,
             font: fontItalic,
         });
-        // ===== ABSTRACT PAGE =====
-        const absPage = pdfDoc.addPage([595, 842]);
+
+        // Abstract Page
+        let absPage = pdfDoc.addPage([595, 842]);
         let ay = 780;
+        const { widthAbs, heightAbs } = absPage.getSize();
+
+        // Background color for abstract page
+        // absPage.drawRectangle({
+        //     x: 0,
+        //     y: 0,
+        //     width: widthAbs,
+        //     height: heightAbs,
+        //     color: rgb(0.851, 1, 1),
+        // });
 
         const marginLeft = 50;
         const marginRight = 590;
@@ -298,18 +308,18 @@ const PublicationForm = () => {
             return lines;
         }
 
-        // Abstract heading
+        // ===== ABSTRACT =====
         const absHeading = "ABSTRACT";
         const absHeadingWidth = fontBold.widthOfTextAtSize(absHeading, 14);
         absPage.drawText(absHeading, {
             x: (595 - absHeadingWidth) / 2,
             y: ay,
             size: 14,
-            font: fontBold,
+            font:fontBold,
         });
         ay -= 45;
 
-        // Abstract body (already justified in your version, keep same)
+        // Abstract body (justified)
         const absLines = wrapText(meta.abstract || "", 95);
         const bodySize = 11;
 
@@ -322,7 +332,7 @@ const PublicationForm = () => {
                 const extraSpace = (lineWidthMax - textWidth) / (words.length - 1);
                 let x = marginLeft;
                 for (const word of words) {
-                    absPage.drawText(word, { x, y: ay, size: bodySize, font });
+                    absPage.drawText(word, { x, y: ay, size: bodySize, font: fontItalic });
                     x += font.widthOfTextAtSize(word, bodySize) + extraSpace;
                 }
             } else {
@@ -335,12 +345,26 @@ const PublicationForm = () => {
                 ay = 780;
             }
         }
-        ay -= 45;
+        ay -= 35;
 
         // ===== KEYWORDS =====
         if (meta.keywords) {
             const kwLabel = "Keywords:";
             const kwLabelSize = 11;
+            const kwText = meta.keywords;
+            const kwSize = 11;
+
+            // Pre-calc height needed
+            const kwLines = wrapText(kwText, 95);
+            const kwHeight = kwLabelSize + 10 + (kwLines.length * (kwSize + 6));
+
+            // If not enough space, move to new page
+            if (ay - kwHeight < 80) {
+                absPage = pdfDoc.addPage([595, 842]);
+                ay = 780;
+            }
+
+            // Draw label
             absPage.drawText(kwLabel, {
                 x: marginLeft,
                 y: ay,
@@ -348,40 +372,91 @@ const PublicationForm = () => {
                 font: fontBold,
             });
 
-            const kwText = meta.keywords;
-            const kwSize = 11;
-            const kwLines = wrapTextByWidth(kwText, font, kwSize, lineWidthMax - 70);
+            let kwY = ay - (kwLabelSize + 4);
+            for (let i = 0; i < kwLines.length; i++) {
+                const line = kwLines[i];
+                const words = line.split(" ");
+                const textWidth = font.widthOfTextAtSize(line, kwSize);
 
-            let kwY = ay;
-            for (const line of kwLines) {
-                absPage.drawText(line, {
-                    x: marginLeft + 70,
-                    y: kwY,
-                    size: kwSize,
-                    font,
-                });
-                kwY -= 14;
+                if (words.length > 1 && i !== kwLines.length - 1) {
+                    const extraSpace = (lineWidthMax - textWidth) / (words.length - 1);
+                    let x = marginLeft;
+                    for (const word of words) {
+                        absPage.drawText(word, { x, y: kwY, size: kwSize, font });
+                        x += font.widthOfTextAtSize(word, kwSize) + extraSpace;
+                    }
+                } else {
+                    absPage.drawText(line, { x: marginLeft, y: kwY, size: kwSize, font });
+                }
+                kwY -= kwSize + 5;
             }
 
-            ay = kwY - 30;
+            ay = kwY - 15;
         }
 
-
-        // JEL Code
+        // ===== JEL Code =====
         if (meta.jelcode) {
+            const jelHeight = 55;
+            if (ay - jelHeight < 80) {
+                absPage = pdfDoc.addPage([595, 842]);
+                ay = 780;
+            }
+
             absPage.drawText("JEL Code: ", {
-                x: 50,
+                x: marginLeft,
                 y: ay,
                 size: 11,
                 font: fontBold,
             });
             absPage.drawText(meta.jelcode, {
-                x: 120,
+                x: marginLeft + 70,
                 y: ay,
                 size: 11,
                 font,
             });
-            ay -= 55;
+            ay -= (jelHeight-10);
+        }
+
+        // ===== ACKNOWLEDGMENT =====
+        if (meta.acknowledgment) {
+            const ackLabel = "Acknowledgment:";
+            const ackLines = wrapText(meta.acknowledgment, 95);
+            const ackHeight = bodySize + 10 + (ackLines.length * (bodySize + 6));
+
+            // If not enough space, move whole section to next page
+            if (ay - ackHeight < 80) {
+                absPage = pdfDoc.addPage([595, 842]);
+                ay = 780;
+            }
+
+            // Draw label
+            absPage.drawText(ackLabel, {
+                x: marginLeft,
+                y: ay,
+                size: bodySize,
+                font: fontBold,
+            });
+
+            let ackY = ay - (bodySize + 4);
+            for (let i = 0; i < ackLines.length; i++) {
+                const line = ackLines[i];
+                const words = line.split(" ");
+                const textWidth = font.widthOfTextAtSize(line, bodySize);
+
+                if (words.length > 1 && i !== ackLines.length - 1) {
+                    const extraSpace = (lineWidthMax - textWidth) / (words.length - 1);
+                    let x = marginLeft;
+                    for (const word of words) {
+                        absPage.drawText(word, { x, y: ackY, size: bodySize, font: fontItalic });
+                        x += fontItalic.widthOfTextAtSize(word, bodySize) + extraSpace;
+                    }
+                } else {
+                    absPage.drawText(line, { x: marginLeft, y: ackY, size: bodySize, font: fontItalic });
+                }
+                ackY -= bodySize + 5;
+            }
+
+            ay = ackY - 10;
         }
 
         const pdfBytes = await pdfDoc.save();
@@ -434,8 +509,10 @@ const PublicationForm = () => {
             email: formData.email,
             keywords: formData.keywords,
             category: formData.category,
-            jelcode: formData.jelcode
+            jelcode: formData.jelcode,
+            acknowledgment: formData.acknow  
         };
+
         const coverBytes = await generateCoverAndAbstractBytes(publicationNo, meta);
 
         // 2. Load cover and uploaded doc into pdf-lib
@@ -617,7 +694,7 @@ const PublicationForm = () => {
                             {/* Email */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-800 mb-2">
-                                    Email
+                                    Email ( Corresponding Author )
                                 </label>
                                 <input
                                     type="email"
