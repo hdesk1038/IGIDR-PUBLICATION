@@ -33,8 +33,8 @@ const PublicationForm = () => {
             toast.error("❌ JEL Code cannot exceed 80 characters.");
             return;
         }
-        if (name === "keywords" && value.length > 150) {
-            toast.error("❌ Keywords cannot exceed 150 characters.");
+        if (name === "keywords" && value.length > 200) {
+            toast.error("❌ Keywords cannot exceed 200 characters.");
             return;
         }
         if (name === "acknow" && value.length > 500) {
@@ -901,3 +901,4 @@ const PublicationForm = () => {
 };
 
 export default PublicationForm;
+
