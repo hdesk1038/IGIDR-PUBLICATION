@@ -3,7 +3,7 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzz5DFXdkPenJsTxu0m3ft2tDgaexqNFjKoScTCCsnETsdo0Fp5opW0A8Vh-BQyu-A/exec";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwVgL-sWcBMHdFCehuCrwYCH9Exn99AZX2bgqPeTOsgo2m3F-wQUFPrrSn1lmo5RQ/exec";
 
 const PublicationForm = () => {
     const [formData, setFormData] = useState({
@@ -617,39 +617,89 @@ const PublicationForm = () => {
 
             const result = await res.json();
             if (result.success) {
-                // Show success toast with clickable file link
                 toast.success(
-                    <div>
-                        Submitted Successfully! <br />
-                        Number: <strong>{publicationNo}</strong> <br />
-                        <a
-                            href={result.fileUrl}   // your backend should return this
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-red-500"
-                        >
-                            📂 View Submitted File
-                        </a>
-                    </div>,
+                    ({ closeToast }) => (
+                        <div>
+                            Submitted Successfully! <br />
+                            Number: <strong>{publicationNo}</strong> <br />
+                            <a
+                                href={result.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-red-500"
+                            >
+                                📂 View Submitted File
+                            </a>
+                            <div className="mt-3 flex gap-2">
+                                {/* ✅ Save */}
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const res = await fetch(WEB_APP_URL, {
+                                                method: "POST",
+                                                body: new URLSearchParams({
+                                                    action: "save",
+                                                    publicationNo,
+                                                    category: formData.category,
+                                                }),
+                                            });
+                                            const saveResult = await res.json();
+                                            if (saveResult.success) {
+                                                toast.success("👍 Record Finalized!");
+                                            } else {
+                                                toast.error("❌ Save failed: " + saveResult.error);
+                                            }
+                                        } catch (err) {
+                                            console.error(err);
+                                            toast.error("⚠️ Error finalizing record");
+                                        }
+                                        closeToast();
+                                    }}
+                                    className="px-3 py-1 bg-green-600 text-white rounded"
+                                >
+                                    Save Record
+                                </button>
+
+                                {/* ❌ Delete */}
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const res = await fetch(WEB_APP_URL, {
+                                                method: "POST",
+                                                body: new URLSearchParams({
+                                                    action: "delete",
+                                                    publicationNo,
+                                                    category: formData.category,
+                                                }),
+                                            });
+                                            const delResult = await res.json();
+                                            if (delResult.success) {
+                                                toast.success("🗑️ Record Deleted!");
+                                            } else {
+                                                toast.error("❌ Delete failed: " + delResult.error);
+                                            }
+                                        } catch (err) {
+                                            console.error(err);
+                                            toast.error("⚠️ Error deleting record");
+                                        }
+                                        closeToast();
+                                    }}
+                                    className="px-3 py-1 bg-red-600 text-white rounded"
+                                >
+                                    Delete Record
+                                </button>
+                            </div>
+                        </div>
+                    ),
                     {
-                        autoClose: 8000,
-                        onClose: () => window.location.reload()
+                        autoClose: false,
+                        closeOnClick: false,
+                        draggable: false,
                     }
                 );
-
-                // Reset form except category
-                setFormData((prev) => ({
-                    ...prev,
-                    author: "",
-                    email: "",
-                    title: "",
-                    abstract: "",
-                    jelcode: "",
-                    keywords: "",
-                    acknow: "",
-                    file: null,
-                }));
             }
+
+
             else {
                 alert("❌ Error: " + result.error);
             }
@@ -901,4 +951,3 @@ const PublicationForm = () => {
 };
 
 export default PublicationForm;
-
