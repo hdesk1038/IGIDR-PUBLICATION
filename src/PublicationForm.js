@@ -626,7 +626,7 @@ const PublicationForm = () => {
                                 href={result.fileUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-red-500"
+                                className="text-red-500 font-bold"
                             >
                                 📂 View Submitted File
                             </a>
@@ -951,3 +951,4 @@ const PublicationForm = () => {
 };
 
 export default PublicationForm;
+
