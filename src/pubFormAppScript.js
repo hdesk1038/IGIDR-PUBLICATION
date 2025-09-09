@@ -53,6 +53,82 @@ function doPost(e) {
 
         // Apps Script exposes form fields in e.parameter
         var params = e.parameter || {};
+
+        // ====== DELETE REQUEST ======
+        if (params.action === 'delete') {
+            var publicationNo = (params.publicationNo || '').trim();
+            var category = (params.category || '').trim();
+            if (!publicationNo || !category) return _jsonError('Missing publicationNo or category');
+
+            var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+            var sheet = ss.getSheetByName(categoryToSheetName_(category));
+            if (!sheet) return _jsonError('Sheet not found: ' + category);
+
+            var data = sheet.getDataRange().getValues();
+            var foundRow = -1;
+            for (var r = 1; r < data.length; r++) {
+                if (String(data[r][0]) === publicationNo) {
+                    foundRow = r + 1;
+                    break;
+                }
+            }
+
+            if (foundRow > 0) {
+                // delete Drive file too
+                var fileUrl = data[foundRow - 1][8]; // col I = fileUrl
+                if (fileUrl) {
+                    var fileId = fileUrl.match(/[-\w]{25,}/);
+                    if (fileId && fileId[0]) {
+                        try {
+                            DriveApp.getFileById(fileId[0]).setTrashed(true);
+                        } catch (err) {
+                            Logger.log('File delete error: ' + err.message);
+                        }
+                    }
+                }
+                sheet.deleteRow(foundRow);
+                return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Record deleted" }))
+                    .setMimeType(ContentService.MimeType.JSON);
+            } else {
+                return _jsonError("PublicationNo not found in sheet");
+            }
+        }
+
+        // ====== SAVE REQUEST (Finalize) ======
+        if (params.action === 'save') {
+            var publicationNo = (params.publicationNo || '').trim();
+            var category = (params.category || '').trim();
+            if (!publicationNo || !category) return _jsonError('Missing publicationNo or category');
+
+            var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+            var sheet = ss.getSheetByName(categoryToSheetName_(category));
+            if (!sheet) return _jsonError('Sheet not found: ' + category);
+
+            var data = sheet.getDataRange().getValues();
+            var foundRow = -1;
+            for (var r = 1; r < data.length; r++) {
+                if (String(data[r][0]) === publicationNo) {
+                    foundRow = r + 1;
+                    break;
+                }
+            }
+
+            if (foundRow > 0) {
+                var now = new Date();
+                var formatted = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
+
+                sheet.getRange(foundRow, 11).setValue("FINALIZED"); // col K = status
+                sheet.getRange(foundRow, 12).setValue(formatted);   // col L = finalized timestamp (with time)
+
+                return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Record finalized", time: formatted }))
+                    .setMimeType(ContentService.MimeType.JSON);
+            } else {
+                return _jsonError("PublicationNo not found in sheet");
+            }
+
+        }
+
+        // ====== DEFAULT UPLOAD FLOW (unchanged) ======
         var publicationNo = (params.publicationNo || '').trim();
         var category = (params.category || '').trim();
         var author = params.author || '';
@@ -83,7 +159,6 @@ function doPost(e) {
         var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
         var sheet = ss.getSheetByName(sheetName);
         if (!sheet) {
-            // fallback: put into a default sheet (or create)
             return _jsonError('Sheet not found for category: ' + category);
         }
 
@@ -115,7 +190,6 @@ function doPost(e) {
         if (foundRow > 0) {
             sheet.getRange(foundRow, 1, 1, rowValues.length).setValues([rowValues]);
         } else {
-            // If reservation row not found (edge case), append a fresh row
             sheet.appendRow(rowValues);
         }
 
