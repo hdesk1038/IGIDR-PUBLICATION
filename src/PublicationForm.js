@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { Link } from "react-router";
 
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwVgL-sWcBMHdFCehuCrwYCH9Exn99AZX2bgqPeTOsgo2m3F-wQUFPrrSn1lmo5RQ/exec";
 
@@ -626,10 +627,11 @@ const PublicationForm = () => {
                                 href={result.fileUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-red-500 font-bold"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition"
                             >
                                 📂 View Submitted File
                             </a>
+
                             <div className="mt-3 flex gap-2">
                                 {/* ✅ Save */}
                                 <button
@@ -723,6 +725,15 @@ const PublicationForm = () => {
                         <h2 className="text-center text-xl sm:text-2xl font-bold text-white">
                             Upload IGIDR Publication
                         </h2>
+
+                        <div className="mt-4 flex justify-center">
+                            <Link
+                                to="/description"
+                                className="inline-block px-6 py-2 text-sm sm:text-base font-semibold text-indigo-600 bg-white rounded-lg shadow-md hover:bg-gray-100 transition animate-bounce"
+                            >
+                                📘 Guide to Filling the Publication Form
+                            </Link>
+                        </div>
                     </div>
 
                     {/* Form Content */}
@@ -951,4 +962,3 @@ const PublicationForm = () => {
 };
 
 export default PublicationForm;
-
