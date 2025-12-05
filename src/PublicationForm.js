@@ -26,8 +26,8 @@ const PublicationForm = () => {
         const { name, value, type, files } = e.target;
 
         // === Character length limits ===
-        if (name === "abstract" && value.length > 1200) {
-            toast.error("❌ Abstract cannot exceed 1200 characters.");
+        if (name === "abstract" && value.length > 2500) {
+            toast.error("❌ Abstract cannot exceed 2500 characters.");
             return;
         }
         if (name === "jelcode" && value.length > 80) {
@@ -38,8 +38,8 @@ const PublicationForm = () => {
             toast.error("❌ Keywords cannot exceed 200 characters.");
             return;
         }
-        if (name === "acknow" && value.length > 500) {
-            toast.error("❌ Acknowledgement cannot exceed 500 characters.");
+        if (name === "acknow" && value.length > 600) {
+            toast.error("❌ Acknowledgement cannot exceed 600 characters.");
             return;
         }
 
@@ -962,3 +962,4 @@ const PublicationForm = () => {
 };
 
 export default PublicationForm;
+
