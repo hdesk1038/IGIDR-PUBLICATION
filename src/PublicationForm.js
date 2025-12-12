@@ -38,8 +38,8 @@ const PublicationForm = () => {
             toast.error("❌ Keywords cannot exceed 200 characters.");
             return;
         }
-        if (name === "acknow" && value.length > 600) {
-            toast.error("❌ Acknowledgement cannot exceed 600 characters.");
+        if (name === "acknow" && value.length > 500) {
+            toast.error("❌ Acknowledgement cannot exceed 500 characters.");
             return;
         }
 
@@ -134,7 +134,7 @@ const PublicationForm = () => {
                 y,
                 size: titleSizeCover,
                 font: fontBold,
-                color: rgb(0.5, 0, 0), // maroon
+                color: rgb(0, 0, 0), // maroon
             });
 
             y -= 25; // spacing between lines
@@ -180,9 +180,9 @@ const PublicationForm = () => {
 
         // Institute block
         const instLine1 = "INDIRA GANDHI INSTITUTE OF DEVELOPMENT RESEARCH";
-        const instLine2 = "Film City Rd";
-        const instLine3 = "Mumbai 400065";
-        const instLine4 = "India";
+        // const instLine2 = "Film City Rd";
+        // const instLine3 = "Mumbai 400065";
+        // const instLine4 = "India";
 
         // Y starting position
         let instY = 200;
@@ -198,33 +198,33 @@ const PublicationForm = () => {
         instY -= 20;
 
         // Line 2
-        const line2Width = font.widthOfTextAtSize(instLine2, 13);
-        cover.drawText(instLine2, {
-            x: (width - line2Width) / 2,
-            y: instY,
-            size: 13,
-            font,
-        });
+        // const line2Width = font.widthOfTextAtSize(instLine2, 13);
+        // cover.drawText(instLine2, {
+        //     x: (width - line2Width) / 2,
+        //     y: instY,
+        //     size: 13,
+        //     font,
+        // });
         instY -= 20;
 
         // Line 3
-        const line3Width = font.widthOfTextAtSize(instLine3, 13);
-        cover.drawText(instLine3, {
-            x: (width - line3Width) / 2,
-            y: instY,
-            size: 13,
-            font,
-        });
+        // const line3Width = font.widthOfTextAtSize(instLine3, 13);
+        // cover.drawText(instLine3, {
+        //     x: (width - line3Width) / 2,
+        //     y: instY,
+        //     size: 13,
+        //     font,
+        // });
         instY -= 20;
 
         // Line 4
-        const line4Width = font.widthOfTextAtSize(instLine4, 13);
-        cover.drawText(instLine4, {
-            x: (width - line4Width) / 2,
-            y: instY,
-            size: 13,
-            font,
-        });
+        // const line4Width = font.widthOfTextAtSize(instLine4, 13);
+        // cover.drawText(instLine4, {
+        //     x: (width - line4Width) / 2,
+        //     y: instY,
+        //     size: 13,
+        //     font,
+        // });
 
         // Date
         const dateStr = new Date().toLocaleString("en-GB", { month: "long", year: "numeric" });
@@ -369,52 +369,92 @@ const PublicationForm = () => {
         }
         ay -= 35;
 
+        function wrapTextPixel(text, font, fontSize, maxWidth) {
+            const words = text.split(" ");
+            const lines = [];
+            let currentLine = "";
+
+            for (let word of words) {
+                const testLine = currentLine ? currentLine + " " + word : word;
+                const testWidth = font.widthOfTextAtSize(testLine, fontSize);
+
+                if (testWidth > maxWidth) {
+                    lines.push(currentLine);
+                    currentLine = word;
+                } else {
+                    currentLine = testLine;
+                }
+            }
+
+            if (currentLine) {
+                lines.push(currentLine);
+            }
+
+            return lines;
+        }
+
+
         // ===== KEYWORDS =====
         if (meta.keywords) {
-            const kwLabel = "Keywords:";
+            const kwLabel = "Keywords: ";
             const kwLabelSize = 11;
             const kwText = meta.keywords;
             const kwSize = 11;
 
-            // Pre-calc height needed
-            const kwLines = wrapText(kwText, 95);
-            const kwHeight = kwLabelSize + 10 + (kwLines.length * (kwSize + 6));
+            const labelWidth = fontBold.widthOfTextAtSize(kwLabel, kwLabelSize);
 
-            // If not enough space, move to new page
+            const lineWidthMax = 500; // adjust based on PDF margins
+
+            // Pixel-accurate wrap for JUST the keywords text
+            const wrappedKwLines = wrapTextPixel(
+                kwText,
+                font,
+                kwSize,
+                lineWidthMax - labelWidth
+            );
+
+            const kwHeight = wrappedKwLines.length * (kwSize + 6);
+
+            // Page space check
             if (ay - kwHeight < 80) {
                 absPage = pdfDoc.addPage([595, 842]);
                 ay = 780;
             }
 
-            // Draw label
+            let kwY = ay;
+
+            // --- FIRST LINE: bold label + first text line ---
             absPage.drawText(kwLabel, {
                 x: marginLeft,
-                y: ay,
+                y: kwY,
                 size: kwLabelSize,
                 font: fontBold,
             });
 
-            let kwY = ay - (kwLabelSize + 4);
-            for (let i = 0; i < kwLines.length; i++) {
-                const line = kwLines[i];
-                const words = line.split(" ");
-                const textWidth = font.widthOfTextAtSize(line, kwSize);
+            absPage.drawText(wrappedKwLines[0], {
+                x: marginLeft + labelWidth,
+                y: kwY,
+                size: kwSize,
+                font: font,
+            });
 
-                if (words.length > 1 && i !== kwLines.length - 1) {
-                    const extraSpace = (lineWidthMax - textWidth) / (words.length - 1);
-                    let x = marginLeft;
-                    for (const word of words) {
-                        absPage.drawText(word, { x, y: kwY, size: kwSize, font });
-                        x += font.widthOfTextAtSize(word, kwSize) + extraSpace;
-                    }
-                } else {
-                    absPage.drawText(line, { x: marginLeft, y: kwY, size: kwSize, font });
-                }
-                kwY -= kwSize + 5;
+            kwY -= kwSize + 6;
+
+            // --- REMAINING LINES: only text ---
+            for (let i = 1; i < wrappedKwLines.length; i++) {
+                absPage.drawText(wrappedKwLines[i], {
+                    x: marginLeft,
+                    y: kwY,
+                    size: kwSize,
+                    font: font,
+                });
+
+                kwY -= kwSize + 6;
             }
 
-            ay = kwY - 15;
+            ay = kwY - 10;
         }
+
 
         // ===== JEL Code =====
         if (meta.jelcode) {
@@ -962,4 +1002,3 @@ const PublicationForm = () => {
 };
 
 export default PublicationForm;
-
