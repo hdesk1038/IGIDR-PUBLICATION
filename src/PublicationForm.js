@@ -354,7 +354,7 @@ const PublicationForm = () => {
                 const extraSpace = (lineWidthMax - textWidth) / (words.length - 1);
                 let x = marginLeft;
                 for (const word of words) {
-                    absPage.drawText(word, { x, y: ay, size: bodySize, font: fontItalic });
+                    absPage.drawText(word, { x, y: ay, size: bodySize, font });
                     x += font.widthOfTextAtSize(word, bodySize) + extraSpace;
                 }
             } else {
